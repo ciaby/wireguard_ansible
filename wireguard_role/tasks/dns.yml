@@ -1,5 +1,5 @@
 - name: Install unbound
-  apt: 
+  apt:
     name:
       - unbound
       - unbound-host
@@ -31,7 +31,7 @@
     path: /var/lib/unbound
     owner: unbound
     group: unbound
-    recurse: yes 
+    recurse: yes
 
 - name: Turn off resolved (in Ubuntu 18.04)
   lineinfile:
@@ -49,7 +49,7 @@
     state: stopped
   notify: "reboot the server"
   when: remove_resolved.changed  # Lest we make errors for those without resolved
-  
+
 - name: Delete the resolved-symlinked resolv.conf (in Ubuntu 18.04)  # https://askubuntu.com/a/907249
   file:
     path: "/etc/resolv.conf"

@@ -4,7 +4,7 @@
 # This is how we avoid generating new keys every time this is run.
 # To force re-generating everything, before running the
 # playbook go on the server and do
-#     wg-quick down wg0 && rm /etc/wireguard/wg0.conf 
+#     wg-quick down wg0 && rm /etc/wireguard/wg0.conf
 # (simply removing wg0.conf without previously shutting down the service
 # will make it impossible to shut down the service in an orderly fashion!
 # You will have to manually re-create a wg0.conf file before it will exit.)
@@ -16,44 +16,42 @@
 - name: Generate private and public keys for the client and server
   shell: umask 077; wg genkey | tee {{ item }}.private | wg pubkey > {{ item }}.public
   register: key_files
-  with_sequence: start=0 end={{ clients }}
+  with_sequence: start=0 end=1
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
 
 - name: Register private key file contents
   shell: cat {{ item }}.private
   register: private_key_files
-  with_sequence: start=0 end={{ clients }}
+  with_sequence: start=0 end=1
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
 
 - name: Register public key file contents
   shell: cat {{ item }}.public
   register: public_key_files
-  with_sequence: start=0 end={{ clients }}
+  with_sequence: start=0 end=1
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
 
 # Client configs are traditionally named wg0-client.conf, this lets
 # us keep that scheme.
 - name: Generate directories for client configs
   file:
-    path: "~/wg_clients/client_{{ item }}"
+    path: "~/wg_clients/client_1"
     state: directory
     owner: root
     group: root
     mode: 0600
-  with_sequence: start=1 end={{ clients }}
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
-      
+
 - name: Generate client configs
   template:
     src: "templates/client.conf"
-    dest: "~/wg_clients/client_{{ item }}/wg0-client.conf"
+    dest: "~/wg_clients/client_1/wg0-client.conf"
     owner: root
     group: root
     mode: 0600
-  with_sequence: start=1 end={{ clients }}
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
-  
-  
+
+
 # Else an already-running service will overwrite the local
 # config we are about to create when it quits
 - name: Stop any running Wireguard service
@@ -69,9 +67,9 @@
   register: wg_quick_down_out  # For debugging
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
 
-# Should happen last among the config file creations, so if the process 
-# is interrupted we will re-generate everything (the existence of the 
-# server config is used to determine whether to generate the server and 
+# Should happen last among the config file creations, so if the process
+# is interrupted we will re-generate everything (the existence of the
+# server config is used to determine whether to generate the server and
 # client config files)
 - name: Generate server config
   template:
@@ -95,8 +93,7 @@
   # when is omitted since state should be `started` regardless
 
 - name: Register the clients on the vpn server
-  shell: wg set wg0 peer {{ public_key_files.results[item|int].stdout }} allowed-ips {{ vpn_network }}.{{item|int + 1}}/32
-  with_sequence: start=1 end={{ clients }}
+  shell: wg set wg0 peer {{ public_key_files.results[1].stdout }} allowed-ips {{ vpn_network }}.2/32
   when: wg0_conf is not defined or wg0_conf.stat.exists == false
 
 - name: Restart the VPN service to save changes
